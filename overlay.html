@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pantalla · BCN DESPERTA</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --acento:#E4002B; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  /* Fondo TRANSPARENTE por defecto: pon tú el que quieras desde el control */
+  body{background:transparent;font-family:'Inter',sans-serif;overflow:hidden;}
+  #bgimg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+  .wrap{position:fixed;inset:0;display:flex;flex-direction:column;justify-content:flex-end;
+        padding:6vh 6vw;}
+  .caja{max-width:1500px;}
+  .titular{
+    font-family:'Oswald';font-weight:700;text-transform:uppercase;line-height:1.0;
+    font-size:clamp(40px,7vw,120px);color:#fff;
+    border-left:.14em solid var(--acento);padding-left:.32em;
+    text-shadow:0 3px 18px rgba(0,0,0,.85);
+  }
+  .frase{
+    font-family:'Inter';font-weight:500;font-style:italic;color:#fff;
+    font-size:clamp(20px,2.4vw,40px);margin-top:.6em;max-width:min(60ch,90vw);
+    text-shadow:0 2px 12px rgba(0,0,0,.9);white-space:pre-wrap;
+  }
+  .hide{display:none;}
+  /* animación de entrada suave */
+  .in{animation:in .5s cubic-bezier(.2,.7,.2,1) both;}
+  @keyframes in{from{opacity:0;transform:translateY(.4em);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){.in{animation:none;}}
+</style>
+</head>
+<body>
+  <img id="bgimg" alt="">
+  <div class="wrap">
+    <div class="caja" id="caja">
+      <div class="titular hide" id="titular"></div>
+      <div class="frase hide" id="frase"></div>
+    </div>
+  </div>
+<script>
+  const $=id=>document.getElementById(id);
+  function aplicarFondo(f){
+    f=f||{tipo:'transparente'};
+    const img=$('bgimg');
+    if(f.tipo==='color'){ document.body.style.background=f.valor||'#000'; img.style.display='none'; }
+    else if(f.tipo==='imagen' && f.valor){ img.src=f.valor; img.style.display='block'; document.body.style.background='transparent'; }
+    else { document.body.style.background='transparent'; img.style.display='none'; }
+  }
+  function render(e){
+    e=e||{};
+    if(e.acento) document.documentElement.style.setProperty('--acento', e.acento);
+    aplicarFondo(e.fondo);
+    const t=(e.titular||'').trim(), f=(e.frase||'').trim();
+    const caja=$('caja');
+    $('titular').textContent=t; $('titular').classList.toggle('hide', !t);
+    $('frase').textContent=f; $('frase').classList.toggle('hide', !f);
+    if(t||f){ caja.classList.remove('in'); void caja.offsetWidth; caja.classList.add('in'); }
+  }
+  // Sincronización con el control (misma máquina/navegador)
+  try{ const ch=new BroadcastChannel('bcn_overlay'); ch.onmessage=ev=>render(ev.data); }catch(_){}
+  window.addEventListener('storage', ev=>{ if(ev.key==='bcn_overlay_state' && ev.newValue) render(JSON.parse(ev.newValue)); });
+  // Estado al abrir
+  try{ const s=localStorage.getItem('bcn_overlay_state'); if(s) render(JSON.parse(s)); }catch(_){}
+</script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control · BCN DESPERTA</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0b0d11;--panel:#14171d;--line:#242833;--txt:#EDEFF3;--muted:#8A93A2;--acento:#E4002B;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;padding:20px;max-width:1100px;margin:auto;}
+  h1{font-family:'Oswald';font-weight:700;letter-spacing:.04em;font-size:26px;}
+  .sub{color:var(--muted);font-size:13px;margin:2px 0 14px;}
+  h2{font-family:'Oswald';font-weight:600;letter-spacing:.05em;font-size:15px;color:var(--muted);text-transform:uppercase;margin:14px 0 8px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;}}
+  input,textarea,select,button{font:inherit;border-radius:8px;}
+  input,textarea,select{width:100%;background:var(--panel);color:var(--txt);border:1px solid var(--line);padding:10px;margin-top:4px;}
+  button{border:0;padding:10px 14px;color:#fff;cursor:pointer;font-weight:600;}
+  .b1{background:var(--acento);} .b2{background:#2563EB;} .b3{background:#3a3f4b;} .b4{background:#12805C;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px;}
+  .card.on{border-color:var(--acento);box-shadow:0 0 0 1px var(--acento);}
+  .meta{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 14px;margin-bottom:14px;}
+  summary{cursor:pointer;font-family:'Oswald';font-weight:600;padding:8px 0;}
+  label{display:block;color:var(--muted);font-size:13px;margin:10px 0 0;}
+  .prev{border:1px dashed var(--line);border-radius:10px;padding:16px;margin-top:8px;background:#000;min-height:84px;}
+  .prev .t{font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:24px;border-left:6px solid var(--acento);padding-left:10px;line-height:1.05;}
+  .prev .f{font-style:italic;color:#cfd6e0;margin-top:8px;font-size:15px;}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px;}
+</style>
+</head>
+<body>
+  <h1>BCN DESPERTA</h1>
+  <div class="sub">Control en directo · <a href="overlay.html" target="_blank" style="color:var(--acento)">Abrir pantalla (overlay) ↗</a></div>
+
+  <details id="cfg">
+    <summary>⚙️ Configuración</summary>
+    <label>Clave de Gemini (se guarda solo en tu navegador, nunca en GitHub)</label>
+    <input id="key_g" type="password" placeholder="Clave de Gemini">
+    <label>Clave de Claude (opcional, para el relevo)</label>
+    <input id="key_c" type="password" placeholder="Clave de Claude (Anthropic)">
+    <label>Motor preferido (si falla, usa el otro automáticamente)</label>
+    <select id="motor"><option value="gemini">Gemini (rápido)</option><option value="claude">Claude</option></select>
+    <label>Idioma de la escucha</label>
+    <select id="lang"><option value="es-ES">Español (España)</option><option value="ca-ES">Catalán</option></select>
+    <label>Fondo de la pantalla (overlay)</label>
+    <select id="fondoTipo" onchange="pintarFondoCtrl()">
+      <option value="transparente">Transparente (pones tú el fondo)</option>
+      <option value="color">Color</option>
+      <option value="imagen">Imagen (URL)</option>
+    </select>
+    <div id="fondoColorBox" style="display:none"><label>Color</label><input id="fondoColor" type="color" value="#000000" style="height:38px"></div>
+    <div id="fondoImgBox" style="display:none"><label>URL de la imagen</label><input id="fondoImg" placeholder="https://…"></div>
+    <label>Color de acento</label><input id="acento" type="color" value="#E4002B" style="height:38px">
+    <div class="row"><button class="b1" onclick="guardarCfg()">Guardar configuración</button></div>
+  </details>
+
+  <div class="bar">
+    <span class="meta">En pantalla:</span>
+    <b id="enPantalla" style="flex:1">—</b>
+    <button class="b3" onclick="quitarPantalla()">Quitar de pantalla</button>
+  </div>
+
+  <div class="grid">
+    <div>
+      <h2>🎤 Escuchar (en paralelo)</h2>
+      <div class="card" style="margin-top:0">
+        <div class="row" style="margin-top:0">
+          <label style="margin:0;display:flex;align-items:center;gap:6px"><input type="radio" name="me" value="tramos" checked style="width:auto" onchange="modoE='tramos'"> Tramos</label>
+          <label style="margin:0;display:flex;align-items:center;gap:6px"><input type="radio" name="me" value="continua" style="width:auto" onchange="modoE='continua'"> Continua</label>
+        </div>
+        <div class="row">
+          <button class="b2" id="btnEsc" onclick="toggleEsc()">▶️ Escuchar</button>
+          <button class="b3" onclick="proponerAhora()">Proponer ahora</button>
+        </div>
+        <div class="meta" id="trans" style="margin-top:8px;min-height:16px"></div>
+      </div>
+
+      <h2>✍️ Meter a mano</h2>
+      <div class="card" style="margin-top:0">
+        <label>Titular</label><input id="mTit" placeholder="Escribe el titular…">
+        <label>Frase / cita (opcional)</label><textarea id="mFra" rows="2" placeholder='"..."'></textarea>
+        <div class="row">
+          <button class="b1" onclick="anadir()">Añadir a la lista</button>
+          <button class="b4" onclick="manualDirecto()">A pantalla directo</button>
+        </div>
+      </div>
+
+      <h2>Vista previa</h2>
+      <div class="prev"><div class="t" id="pvT">—</div><div class="f" id="pvF"></div></div>
+    </div>
+
+    <div>
+      <h2>📝 Lista de propuestas (editable)</h2>
+      <div class="meta">Edita el texto si quieres y pulsa Lanzar. Las nuevas aparecen arriba.</div>
+      <div id="lista"></div>
+    </div>
+  </div>
+
+<script>
+  const $=id=>document.getElementById(id);
+  const chan = ('BroadcastChannel' in window) ? new BroadcastChannel('bcn_overlay') : null;
+  let modoE='tramos', seq=0;
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+
+  // --- Enviar a la pantalla (overlay) ---
+  function fondoActual(){
+    const tipo=$('fondoTipo').value;
+    return {tipo, valor: tipo==='color'?$('fondoColor').value : tipo==='imagen'?$('fondoImg').value : ''};
+  }
+  function enviar(titular, frase){
+    const estado={titular:titular||'', frase:frase||'', fondo:fondoActual(), acento:$('acento').value};
+    localStorage.setItem('bcn_overlay_state', JSON.stringify(estado));
+    if(chan) chan.postMessage(estado);
+    $('pvT').textContent=estado.titular||'—'; $('pvF').textContent=estado.frase||'';
+    $('enPantalla').textContent=estado.titular? estado.titular : '—';
+    document.documentElement.style.setProperty('--acento',$('acento').value);
+  }
+  function quitarPantalla(){ enviar('',''); document.querySelectorAll('.card.on').forEach(c=>c.classList.remove('on')); }
+
+  // --- Lista de propuestas (editable, sin recargar lo que estás editando) ---
+  function agregarPropuesta(titular, frase, origen){
+    const id=++seq;
+    const html=`<div class="card" id="card_${id}">
+      <div class="meta">${esc(origen||'')}</div>
+      <input id="pt_${id}" value="${esc(titular||'')}" placeholder="Titular">
+      <textarea id="pf_${id}" rows="2" placeholder="Frase / cita">${esc(frase||'')}</textarea>
+      <div class="row">
+        <button class="b4" onclick="lanzar(${id})">📺 Lanzar</button>
+        <button class="b3" onclick="eliminar(${id})">🗑️ Eliminar</button>
+      </div></div>`;
+    $('lista').insertAdjacentHTML('afterbegin', html);
+  }
+  function lanzar(id){
+    enviar($('pt_'+id).value.trim(), $('pf_'+id).value.trim());
+    document.querySelectorAll('.card.on').forEach(c=>c.classList.remove('on'));
+    const c=$('card_'+id); if(c) c.classList.add('on');
+  }
+  function eliminar(id){ const c=$('card_'+id); if(c) c.remove(); }
+  function anadir(){ agregarPropuesta($('mTit').value.trim(), $('mFra').value.trim(), 'Manual'); $('mTit').value='';$('mFra').value=''; }
+  function manualDirecto(){ enviar($('mTit').value.trim(), $('mFra').value.trim()); }
+
+  // --- Configuración ---
+  function pintarFondoCtrl(){
+    $('fondoColorBox').style.display = $('fondoTipo').value==='color'?'block':'none';
+    $('fondoImgBox').style.display   = $('fondoTipo').value==='imagen'?'block':'none';
+  }
+  function guardarCfg(){
+    localStorage.setItem('gemini_key', $('key_g').value.trim());
+    localStorage.setItem('claude_key', $('key_c').value.trim());
+    localStorage.setItem('bcn_cfg', JSON.stringify({
+      motor:$('motor').value, lang:$('lang').value, fondoTipo:$('fondoTipo').value,
+      fondoColor:$('fondoColor').value, fondoImg:$('fondoImg').value, acento:$('acento').value }));
+    enviar($('pvT').textContent==='—'?'':$('pvT').textContent, $('pvF').textContent);
+    $('cfg').open=false;
+  }
+  function cargarCfg(){
+    $('key_g').value=localStorage.getItem('gemini_key')||'';
+    $('key_c').value=localStorage.getItem('claude_key')||'';
+    try{const c=JSON.parse(localStorage.getItem('bcn_cfg')||'{}');
+      if(c.motor)$('motor').value=c.motor; if(c.lang)$('lang').value=c.lang;
+      if(c.fondoTipo)$('fondoTipo').value=c.fondoTipo; if(c.fondoColor)$('fondoColor').value=c.fondoColor;
+      if(c.fondoImg)$('fondoImg').value=c.fondoImg; if(c.acento)$('acento').value=c.acento;
+    }catch(_){}
+    pintarFondoCtrl();
+    if(!localStorage.getItem('gemini_key') && !localStorage.getItem('claude_key')) $('cfg').open=true;
+  }
+
+  function fechaES(){
+    const D=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const n=new Date(); return `${D[n.getDay()]} ${n.getDate()} de ${M[n.getMonth()]} de ${n.getFullYear()}`;
+  }
+  function PROMPT(texto){
+    return `Hoy es ${fechaES()}. Eres redactor de un evento en directo. A partir de lo que se acaba de decir, `+
+      `propón hasta 4 titulares breves y claros, cada uno con la frase o cita clave. `+
+      `Devuelve SOLO un array JSON, sin markdown: [{"titular":"...","frase":"..."}]. Si no hay nada, [].\n\nTEXTO:\n${texto}`;
+  }
+  function parseArr(raw){
+    raw=(raw||'[]').replace(/```json/g,'').replace(/```/g,'').trim();
+    const a=JSON.parse(raw); return Array.isArray(a)?a.filter(x=>x&&x.titular):[];
+  }
+
+  // --- Motores con RELEVO automático ---
+  async function genGemini(texto){
+    const key=localStorage.getItem('gemini_key'); if(!key) throw 'sin clave Gemini';
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:PROMPT(texto)}]}]})});
+    if(!r.ok) throw 'Gemini '+r.status;
+    const d=await r.json(); return parseArr(d?.candidates?.[0]?.content?.parts?.[0]?.text);
+  }
+  async function genClaude(texto){
+    const key=localStorage.getItem('claude_key'); if(!key) throw 'sin clave Claude';
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'x-api-key':key,'anthropic-version':'2023-06-01',
+               'anthropic-dangerous-direct-browser-access':'true','content-type':'application/json'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:700,
+        messages:[{role:'user',content:PROMPT(texto)}]})});
+    if(!r.ok) throw 'Claude '+r.status;
+    const d=await r.json(); const t=(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    return parseArr(t);
+  }
+  async function generar(texto){
+    if(!texto.trim()) return;
+    const orden = ($('motor').value==='claude') ? ['claude','gemini'] : ['gemini','claude'];
+    for(const m of orden){
+      try{
+        const arr = m==='claude' ? await genClaude(texto) : await genGemini(texto);
+        if(arr && arr.length){ arr.slice(0,4).forEach(s=>agregarPropuesta(s.titular, s.frase, 'IA · '+m)); return; }
+      }catch(e){ /* prueba el siguiente motor */ }
+    }
+    $('trans').textContent='No se pudieron generar titulares (revisa claves/idioma).';
+  }
+
+  // --- Escucha con el navegador (Chrome), en paralelo ---
+  let recog=null, escuchando=false, buffer='', ultimo=0;
+  function toggleEsc(){
+    if(!escuchando){
+      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!SR){ alert('Usa Chrome para la escucha por voz.'); return; }
+      recog=new SR(); recog.lang=$('lang').value; recog.continuous=true; recog.interimResults=true;
+      recog.onresult=e=>{
+        let fin='',int='';
+        for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript; e.results[i].isFinal?fin+=t+' ':int+=t;}
+        if(fin){ buffer+=fin; if(modoE==='continua' && Date.now()-ultimo>20000) proponerAhora(); }
+        $('trans').textContent=(buffer+' '+int).slice(-300);
+      };
+      recog.onend=()=>{ if(escuchando){ try{recog.start();}catch(_){} } };
+      escuchando=true; buffer=''; ultimo=Date.now(); try{recog.start();}catch(_){}
+      $('btnEsc').textContent='⏸️ Parar';
+    } else {
+      escuchando=false; try{recog.stop();}catch(_){}
+      $('btnEsc').textContent='▶️ Escuchar';
+      if(buffer.trim()) proponerAhora();
+    }
+  }
+  function proponerAhora(){ const t=buffer.trim(); if(!t)return; ultimo=Date.now(); generar(t); buffer=''; }
+
+  cargarCfg();
+</script>
+</body>
+</html>
