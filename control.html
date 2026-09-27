@@ -154,13 +154,15 @@
       <div class="meta">${esc(origen||'')}</div>
       <input id="pt_${id}" value="${esc(titular||'')}" placeholder="Titular">
       <textarea id="pf_${id}" rows="2" placeholder="Frase / cita">${esc(frase||'')}</textarea>
-      <div class="row" style="gap:6px">
-        <select id="pv_${id}" style="max-width:120px" onchange="reLanzar(${id})" title="Posición vertical">
-          <option value="b" selected>Abajo</option><option value="m">Centro</option><option value="t">Arriba</option>
-        </select>
-        <select id="ph_${id}" style="max-width:130px" onchange="reLanzar(${id})" title="Alineación">
-          <option value="l" selected>Izquierda</option><option value="c">Centro</option><option value="r">Derecha</option>
-        </select>
+      <div class="row" style="gap:8px;align-items:flex-end">
+        <div style="flex:1;min-width:110px"><label style="margin:0 0 2px">Posición</label>
+          <select id="pv_${id}" onchange="reLanzar(${id})">
+            <option value="b" selected>Abajo</option><option value="m">Centro</option><option value="t">Arriba</option>
+          </select></div>
+        <div style="flex:1;min-width:110px"><label style="margin:0 0 2px">Alineación</label>
+          <select id="ph_${id}" onchange="reLanzar(${id})">
+            <option value="l" selected>Izquierda</option><option value="c">Centro</option><option value="r">Derecha</option>
+          </select></div>
       </div>
       <div class="row">
         <button class="b4" onclick="lanzar(${id})">📺 Lanzar</button>
