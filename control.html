@@ -40,13 +40,13 @@
   <details id="cfg">
     <summary>⚙️ Configuración</summary>
     <label>Clave de Gemini (se guarda solo en tu navegador)</label>
-    <input id="key_g" type="password" placeholder="Clave de Gemini">
+    <input id="key_g" type="password" placeholder="Clave de Gemini" onchange="persistirCfg()">
     <label>Clave de Claude (opcional, para el relevo)</label>
-    <input id="key_c" type="password" placeholder="Clave de Claude (Anthropic)">
+    <input id="key_c" type="password" placeholder="Clave de Claude (Anthropic)" onchange="persistirCfg()">
     <label>Motor preferido (si falla, usa el otro solo)</label>
-    <select id="motor"><option value="gemini">Gemini (rápido)</option><option value="claude">Claude</option></select>
+    <select id="motor" onchange="persistirCfg()"><option value="gemini">Gemini (rápido)</option><option value="claude">Claude</option></select>
     <label>Idioma de la escucha</label>
-    <select id="lang"><option value="es-ES">Español (España)</option><option value="ca-ES">Catalán</option></select>
+    <select id="lang" onchange="persistirCfg()"><option value="es-ES">Español (España)</option><option value="ca-ES">Catalán</option></select>
 
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
     <b style="font-family:'Oswald'">Letra del titular</b>
@@ -104,7 +104,9 @@
   <div class="bar">
     <span class="meta">En pantalla:</span>
     <b id="enPantalla" style="flex:1">nada</b>
-    <button class="b3" onclick="quitarTodo()">Quitar todo de pantalla</button>
+    <button class="b2" onclick="forceUpdate()">🔄 Actualizar</button>
+    <button class="b3" onclick="quitarTodo()">Quitar todo</button>
+    <button class="b3" onclick="reset()">♻️ Reset</button>
   </div>
 
   <div class="grid">
@@ -145,6 +147,7 @@
     <div>
       <h2>📝 Lista de propuestas (editable)</h2>
       <div class="meta">Edita, elige posición y alineación, y pulsa Lanzar. Puedes tener varios a la vez.</div>
+      <div class="row" style="margin-top:6px"><button class="b3" onclick="vaciarLista()">🗑️ Vaciar lista</button></div>
       <div id="lista"></div>
     </div>
   </div>
@@ -172,7 +175,13 @@
     try{ localStorage.setItem('bcn_overlay_state', JSON.stringify(e)); }catch(_){}
     if(chan) chan.postMessage(e);
     document.documentElement.style.setProperty('--acento',$('acento').value);
-    refrescarMarcas(); pintarBarra();
+    persistirCfg(); refrescarMarcas(); pintarBarra();
+  }
+  function forceUpdate(){ emitir(); if(chan) chan.postMessage(estadoActual()); }
+  function reset(){
+    if(!confirm('¿Resetear el sistema? Se borran la lista de propuestas, lo que hay en pantalla y la transcripción actual.\n\nNO se borran tus claves, la configuración ni las transcripciones guardadas.')) return;
+    pantalla=[]; propuestas=[]; transcripcion=''; buffer='';
+    $('lista').innerHTML=''; pintarTranscripcion(); guardarControl(); emitir();
   }
   function pintarBarra(){ $('enPantalla').textContent = pantalla.length ? pantalla.map(x=>x.titular||'(sin titular)').join('  ·  ') : 'nada'; }
   function refrescarMarcas(){
@@ -234,6 +243,11 @@
   function eliminar(id){ pantalla=pantalla.filter(x=>x.id!==id); propuestas=propuestas.filter(x=>x.id!==id);
     const c=$('card_'+id); if(c) c.remove(); guardarControl(); emitir(); }
   function anadir(){ agregarPropuesta($('mTit').value.trim(), $('mFra').value.trim(), 'Manual'); $('mTit').value='';$('mFra').value=''; }
+  function vaciarLista(){
+    if(!propuestas.length){ return; }
+    if(!confirm('¿Vaciar toda la lista de propuestas? Esto no borra lo que ya esté en pantalla.')) return;
+    propuestas=[]; $('lista').innerHTML=''; guardarControl();
+  }
 
   // ---------- TRANSCRIPCIÓN ----------
   function pintarTranscripcion(){ const b=$('transcripcion'); b.textContent=transcripcion; b.scrollTop=b.scrollHeight; }
@@ -294,18 +308,18 @@
   function guardarControl(){
     try{ localStorage.setItem('bcn_control', JSON.stringify({propuestas, transcripcion, seq})); }catch(_){}
   }
-  function guardarCfg(){
+  function persistirCfg(){
     localStorage.setItem('gemini_key', $('key_g').value.trim());
     localStorage.setItem('claude_key', $('key_c').value.trim());
-    localStorage.setItem('bcn_cfg', JSON.stringify({
+    try{ localStorage.setItem('bcn_cfg', JSON.stringify({
       motor:$('motor').value, lang:$('lang').value, fondoTipo:$('fondoTipo').value,
       fondoColor:$('fondoColor').value, fondoImg:(imgFondo.startsWith('data:')?'':imgFondo),
       acento:$('acento').value, t_fuente:$('t_fuente').value, t_col:$('t_col').value,
       t_colf:$('t_colf').value, t_tt:$('t_tt').value, t_tf:$('t_tf').value,
       h_pos:$('h_pos').value, h_size:$('h_size').value, h_url:(headerLogo.startsWith('data:')?'':headerLogo),
-      intervalo:$('intervalo').value }));
-    emitir(); $('cfg').open=false;
+      intervalo:$('intervalo').value })); }catch(_){}
   }
+  function guardarCfg(){ persistirCfg(); emitir(); $('cfg').open=false; }
   function cargar(){
     // claves + ajustes
     $('key_g').value=localStorage.getItem('gemini_key')||'';
