@@ -8,11 +8,11 @@
 <style>
   :root{--bg:#0b0d11;--panel:#14171d;--line:#242833;--txt:#EDEFF3;--muted:#8A93A2;--acento:#E4002B;}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;padding:20px;max-width:1100px;margin:auto;}
+  body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;padding:20px;max-width:1180px;margin:auto;}
   h1{font-family:'Oswald';font-weight:700;letter-spacing:.04em;font-size:26px;}
   .sub{color:var(--muted);font-size:13px;margin:2px 0 14px;}
   h2{font-family:'Oswald';font-weight:600;letter-spacing:.05em;font-size:15px;color:var(--muted);text-transform:uppercase;margin:14px 0 8px;}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
   @media(max-width:760px){.grid{grid-template-columns:1fr;}}
   input,textarea,select,button{font:inherit;border-radius:8px;}
   input,textarea,select{width:100%;background:var(--panel);color:var(--txt);border:1px solid var(--line);padding:10px;margin-top:4px;}
@@ -20,15 +20,17 @@
   .b1{background:var(--acento);} .b2{background:#2563EB;} .b3{background:#3a3f4b;} .b4{background:#12805C;}
   .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px;}
-  .card.on{border-color:var(--acento);box-shadow:0 0 0 1px var(--acento);}
+  .card.on{border-color:var(--acento);box-shadow:0 0 0 2px var(--acento);}
   .meta{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;}
   details{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 14px;margin-bottom:14px;}
   summary{cursor:pointer;font-family:'Oswald';font-weight:600;padding:8px 0;}
   label{display:block;color:var(--muted);font-size:13px;margin:10px 0 0;}
   .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px;}
-  .mini{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .mini{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
   .mini > div{flex:1;min-width:120px;}
   .mini input[type=color]{height:38px;}
+  #transcripcion{max-height:32vh;overflow-y:auto;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:10px;white-space:pre-wrap;font-size:13px;color:#c7ccd4;line-height:1.5;margin-top:4px;}
+  #lista{max-height:64vh;overflow-y:auto;padding-right:4px;}
 </style>
 </head>
 <body>
@@ -37,7 +39,6 @@
 
   <details id="cfg">
     <summary>⚙️ Configuración</summary>
-
     <label>Clave de Gemini (se guarda solo en tu navegador)</label>
     <input id="key_g" type="password" placeholder="Clave de Gemini">
     <label>Clave de Claude (opcional, para el relevo)</label>
@@ -48,7 +49,7 @@
     <select id="lang"><option value="es-ES">Español (España)</option><option value="ca-ES">Catalán</option></select>
 
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
-    <b style="font-family:'Oswald'">Letra</b>
+    <b style="font-family:'Oswald'">Letra del titular</b>
     <div class="mini" style="margin-top:6px">
       <div><label>Tipografía</label>
         <select id="t_fuente" onchange="emitir()">
@@ -57,12 +58,13 @@
           <option>Verdana</option><option>Tahoma</option><option>Impact</option><option>Times New Roman</option>
         </select></div>
       <div><label>Color titular</label><input id="t_col" type="color" value="#ffffff" oninput="emitir()"></div>
-      <div><label>Color frase</label><input id="t_colf" type="color" value="#ffffff" oninput="emitir()"></div>
-    </div>
-    <div class="mini" style="margin-top:6px">
       <div><label>Tamaño titular (px, 0=auto)</label><input id="t_tt" type="number" min="0" max="220" value="0" oninput="emitir()"></div>
-      <div><label>Tamaño frase (px, 0=auto)</label><input id="t_tf" type="number" min="0" max="120" value="0" oninput="emitir()"></div>
-      <div><label>Acento</label><input id="acento" type="color" value="#E4002B" oninput="emitir()"></div>
+    </div>
+    <b style="font-family:'Oswald';display:block;margin-top:12px">Letra de la cita</b>
+    <div class="mini" style="margin-top:6px">
+      <div><label>Color cita</label><input id="t_colf" type="color" value="#ffffff" oninput="emitir()"></div>
+      <div><label>Tamaño cita (px, 0=auto)</label><input id="t_tf" type="number" min="0" max="120" value="0" oninput="emitir()"></div>
+      <div><label>Color de acento</label><input id="acento" type="color" value="#E4002B" oninput="emitir()"></div>
     </div>
 
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
@@ -79,7 +81,6 @@
       <label>…o subir plantilla desde tu PC</label><input type="file" id="fondoFile" accept="image/*" onchange="subirPlantilla()">
       <div class="meta" id="imgEstado" style="margin-top:4px"></div>
     </div>
-
     <div class="row"><button class="b1" onclick="guardarCfg()">Guardar configuración</button></div>
   </details>
 
@@ -101,8 +102,12 @@
           <button class="b2" id="btnEsc" onclick="toggleEsc()">▶️ Escuchar</button>
           <button class="b3" onclick="proponerAhora()">Proponer ahora</button>
         </div>
-        <div class="meta" id="trans" style="margin-top:8px;min-height:16px"></div>
+        <div class="meta" id="interim" style="margin-top:8px;min-height:16px;color:#7f8794"></div>
       </div>
+
+      <h2>📄 Transcripción</h2>
+      <div id="transcripcion"></div>
+      <div class="row"><button class="b3" onclick="limpiarTrans()">Limpiar transcripción</button></div>
 
       <h2>✍️ Meter a mano</h2>
       <div class="card" style="margin-top:0">
@@ -114,7 +119,7 @@
 
     <div>
       <h2>📝 Lista de propuestas (editable)</h2>
-      <div class="meta">Edita el texto y pulsa Lanzar. Puedes tener varios a la vez en pantalla.</div>
+      <div class="meta">Edita, elige posición y alineación, y pulsa Lanzar. Puedes tener varios a la vez.</div>
       <div id="lista"></div>
     </div>
   </div>
@@ -122,10 +127,11 @@
 <script>
   const $=id=>document.getElementById(id);
   const chan = ('BroadcastChannel' in window) ? new BroadcastChannel('bcn_overlay') : null;
-  let modoE='tramos', seq=0, pantalla=[], imgFondo='';
+  let modoE='tramos', seq=0, pantalla=[], propuestas=[], transcripcion='', imgFondo='';
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const sel=(a,b)=>a===b?' selected':'';
 
-  // --- Estado de la pantalla (varios textos a la vez) ---
+  // ---------- ESTADO PANTALLA (varios textos, con posición/alineación) ----------
   function fondoActual(){
     const tipo=$('fondoTipo').value;
     return {tipo, valor: tipo==='color'?$('fondoColor').value : tipo==='imagen'?imgFondo : ''};
@@ -137,55 +143,77 @@
   }
   function emitir(){
     const e=estadoActual();
-    try{ localStorage.setItem('bcn_overlay_state', JSON.stringify(e)); }catch(_){ /* imagen grande: solo en vivo */ }
+    try{ localStorage.setItem('bcn_overlay_state', JSON.stringify(e)); }catch(_){}
     if(chan) chan.postMessage(e);
     document.documentElement.style.setProperty('--acento',$('acento').value);
-    pintarBarra();
+    refrescarMarcas(); pintarBarra();
   }
-  function pintarBarra(){
-    $('enPantalla').textContent = pantalla.length ? pantalla.map(x=>x.titular||'(sin titular)').join('  ·  ') : 'nada';
+  function pintarBarra(){ $('enPantalla').textContent = pantalla.length ? pantalla.map(x=>x.titular||'(sin titular)').join('  ·  ') : 'nada'; }
+  function refrescarMarcas(){
+    document.querySelectorAll('#lista .card').forEach(c=>{
+      const id=+c.id.replace('card_',''); c.classList.toggle('on', pantalla.some(x=>x.id===id));
+    });
   }
-  function quitarTodo(){ pantalla=[]; document.querySelectorAll('.card.on').forEach(c=>c.classList.remove('on')); emitir(); }
+  function quitarTodo(){ pantalla=[]; emitir(); }
 
-  // --- Lista de propuestas ---
-  function agregarPropuesta(titular, frase, origen){
-    const id=++seq;
-    const html=`<div class="card" id="card_${id}">
-      <div class="meta">${esc(origen||'')}</div>
-      <input id="pt_${id}" value="${esc(titular||'')}" placeholder="Titular">
-      <textarea id="pf_${id}" rows="2" placeholder="Frase / cita">${esc(frase||'')}</textarea>
-      <div class="row" style="gap:8px;align-items:flex-end">
-        <div style="flex:1;min-width:110px"><label style="margin:0 0 2px">Posición</label>
-          <select id="pv_${id}" onchange="reLanzar(${id})">
-            <option value="b" selected>Abajo</option><option value="m">Centro</option><option value="t">Arriba</option>
-          </select></div>
-        <div style="flex:1;min-width:110px"><label style="margin:0 0 2px">Alineación</label>
-          <select id="ph_${id}" onchange="reLanzar(${id})">
-            <option value="l" selected>Izquierda</option><option value="c">Centro</option><option value="r">Derecha</option>
-          </select></div>
-      </div>
+  // ---------- LISTA DE PROPUESTAS (persistente) ----------
+  function opciones(pv,ph){
+    return `<div class="row" style="gap:8px;align-items:flex-end">
+      <div style="flex:1;min-width:110px"><label style="margin:0 0 2px">Posición</label>
+        <select id="pv_ID" onchange="actualizarProp(ID);reLanzar(ID)">
+          <option value="b"${sel(pv,'b')}>Abajo</option><option value="m"${sel(pv,'m')}>Centro</option><option value="t"${sel(pv,'t')}>Arriba</option>
+        </select></div>
+      <div style="flex:1;min-width:110px"><label style="margin:0 0 2px">Alineación</label>
+        <select id="ph_ID" onchange="actualizarProp(ID);reLanzar(ID)">
+          <option value="l"${sel(ph,'l')}>Izquierda</option><option value="c"${sel(ph,'c')}>Centro</option><option value="r"${sel(ph,'r')}>Derecha</option>
+        </select></div>
+    </div>`;
+  }
+  function cardHTML(p){
+    return `<div class="card" id="card_${p.id}">
+      <div class="meta">${esc(p.origen||'')}</div>
+      <input id="pt_${p.id}" value="${esc(p.titular||'')}" placeholder="Titular" onchange="actualizarProp(${p.id})">
+      <textarea id="pf_${p.id}" rows="2" placeholder="Frase / cita" onchange="actualizarProp(${p.id})">${esc(p.frase||'')}</textarea>
+      ${opciones(p.pv||'b', p.ph||'l').replace(/ID/g, p.id)}
       <div class="row">
-        <button class="b4" onclick="lanzar(${id})">📺 Lanzar</button>
-        <button class="b3" onclick="quitar(${id})">Quitar de pantalla</button>
-        <button class="b3" onclick="eliminar(${id})">🗑️ Eliminar</button>
+        <button class="b4" onclick="lanzar(${p.id})">📺 Lanzar</button>
+        <button class="b3" onclick="quitar(${p.id})">Quitar de pantalla</button>
+        <button class="b3" onclick="eliminar(${p.id})">🗑️ Eliminar</button>
       </div></div>`;
-    $('lista').insertAdjacentHTML('afterbegin', html);
+  }
+  function agregarPropuesta(titular, frase, origen){
+    const p={id:++seq, titular:titular||'', frase:frase||'', pv:'b', ph:'l', origen:origen||''};
+    propuestas.unshift(p);
+    $('lista').insertAdjacentHTML('afterbegin', cardHTML(p));
+    guardarControl();
+  }
+  function pintarLista(){
+    $('lista').innerHTML = propuestas.map(cardHTML).join('');
+    refrescarMarcas();
+  }
+  function actualizarProp(id){
+    const p=propuestas.find(x=>x.id===id); if(!p) return;
+    p.titular=$('pt_'+id).value; p.frase=$('pf_'+id).value; p.pv=$('pv_'+id).value; p.ph=$('ph_'+id).value;
+    guardarControl();
   }
   function lanzar(id){
     const t=$('pt_'+id).value.trim(), f=$('pf_'+id).value.trim();
     const pos=($('pv_'+id).value||'b')+($('ph_'+id).value||'l');
     const i=pantalla.findIndex(x=>x.id===id);
     if(i>=0) pantalla[i]={id,titular:t,frase:f,pos}; else pantalla.push({id,titular:t,frase:f,pos});
-    const c=$('card_'+id); if(c) c.classList.add('on');
-    emitir();
+    actualizarProp(id); emitir();
   }
-  // si cambias la posición y ya está en pantalla, se recoloca al momento
   function reLanzar(id){ if(pantalla.some(x=>x.id===id)) lanzar(id); }
-  function quitar(id){ pantalla=pantalla.filter(x=>x.id!==id); const c=$('card_'+id); if(c) c.classList.remove('on'); emitir(); }
-  function eliminar(id){ quitar(id); const c=$('card_'+id); if(c) c.remove(); }
+  function quitar(id){ pantalla=pantalla.filter(x=>x.id!==id); emitir(); }
+  function eliminar(id){ pantalla=pantalla.filter(x=>x.id!==id); propuestas=propuestas.filter(x=>x.id!==id);
+    const c=$('card_'+id); if(c) c.remove(); guardarControl(); emitir(); }
   function anadir(){ agregarPropuesta($('mTit').value.trim(), $('mFra').value.trim(), 'Manual'); $('mTit').value='';$('mFra').value=''; }
 
-  // --- Plantilla / fondo ---
+  // ---------- TRANSCRIPCIÓN ----------
+  function pintarTranscripcion(){ const b=$('transcripcion'); b.textContent=transcripcion; b.scrollTop=b.scrollHeight; }
+  function limpiarTrans(){ transcripcion=''; pintarTranscripcion(); guardarControl(); }
+
+  // ---------- PLANTILLA ----------
   function pintarFondoCtrl(){
     $('fondoColorBox').style.display = $('fondoTipo').value==='color'?'block':'none';
     $('fondoImgBox').style.display   = $('fondoTipo').value==='imagen'?'block':'none';
@@ -198,11 +226,13 @@
     rd.readAsDataURL(f);
   }
 
-  // --- Configuración ---
+  // ---------- GUARDADO (F5 no pierde nada) ----------
+  function guardarControl(){
+    try{ localStorage.setItem('bcn_control', JSON.stringify({propuestas, transcripcion, seq})); }catch(_){}
+  }
   function guardarCfg(){
     localStorage.setItem('gemini_key', $('key_g').value.trim());
     localStorage.setItem('claude_key', $('key_c').value.trim());
-    // guarda ajustes (la plantilla-URL sí; la subida grande no, para no petar el almacenamiento)
     localStorage.setItem('bcn_cfg', JSON.stringify({
       motor:$('motor').value, lang:$('lang').value, fondoTipo:$('fondoTipo').value,
       fondoColor:$('fondoColor').value, fondoImg:(imgFondo.startsWith('data:')?'':imgFondo),
@@ -210,7 +240,8 @@
       t_colf:$('t_colf').value, t_tt:$('t_tt').value, t_tf:$('t_tf').value }));
     emitir(); $('cfg').open=false;
   }
-  function cargarCfg(){
+  function cargar(){
+    // claves + ajustes
     $('key_g').value=localStorage.getItem('gemini_key')||'';
     $('key_c').value=localStorage.getItem('claude_key')||'';
     try{const c=JSON.parse(localStorage.getItem('bcn_cfg')||'{}');
@@ -221,10 +252,20 @@
       if(c.t_col)$('t_col').value=c.t_col; if(c.t_colf)$('t_colf').value=c.t_colf;
       if(c.t_tt)$('t_tt').value=c.t_tt; if(c.t_tf)$('t_tf').value=c.t_tf;
     }catch(_){}
-    pintarFondoCtrl(); pintarBarra();
+    // pantalla actual (lo que se está viendo)
+    try{const o=JSON.parse(localStorage.getItem('bcn_overlay_state')||'{}'); if(Array.isArray(o.items)) pantalla=o.items;}catch(_){}
+    // lista + transcripción
+    try{const s=JSON.parse(localStorage.getItem('bcn_control')||'{}');
+      if(Array.isArray(s.propuestas)) propuestas=s.propuestas;
+      if(typeof s.transcripcion==='string') transcripcion=s.transcripcion;
+      if(s.seq) seq=s.seq;
+    }catch(_){}
+    seq=Math.max(seq, ...propuestas.map(p=>p.id||0), 0);
+    pintarFondoCtrl(); pintarLista(); pintarTranscripcion(); pintarBarra();
     if(!localStorage.getItem('gemini_key') && !localStorage.getItem('claude_key')) $('cfg').open=true;
   }
 
+  // ---------- IA (con relevo) ----------
   function fechaES(){
     const D=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
     const M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -237,7 +278,6 @@
   }
   function parseArr(raw){ raw=(raw||'[]').replace(/```json/g,'').replace(/```/g,'').trim();
     const a=JSON.parse(raw); return Array.isArray(a)?a.filter(x=>x&&x.titular):[]; }
-
   async function genGemini(texto){
     const key=localStorage.getItem('gemini_key'); if(!key) throw 'sin clave Gemini';
     const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
@@ -260,12 +300,12 @@
     for(const m of orden){
       try{ const arr = m==='claude'?await genClaude(texto):await genGemini(texto);
         if(arr && arr.length){ arr.slice(0,4).forEach(s=>agregarPropuesta(s.titular,s.frase,'IA · '+m)); return; }
-      }catch(e){ /* siguiente motor */ }
+      }catch(e){}
     }
-    $('trans').textContent='No se pudieron generar titulares (revisa claves/idioma).';
+    $('interim').textContent='No se pudieron generar titulares (revisa claves/idioma).';
   }
 
-  // --- Escucha (Chrome), en paralelo ---
+  // ---------- ESCUCHA (Chrome), en paralelo ----------
   let recog=null, escuchando=false, buffer='', ultimo=0;
   function toggleEsc(){
     if(!escuchando){
@@ -274,8 +314,9 @@
       recog=new SR(); recog.lang=$('lang').value; recog.continuous=true; recog.interimResults=true;
       recog.onresult=e=>{ let fin='',int='';
         for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript; e.results[i].isFinal?fin+=t+' ':int+=t;}
-        if(fin){ buffer+=fin; if(modoE==='continua' && Date.now()-ultimo>20000) proponerAhora(); }
-        $('trans').textContent=(buffer+' '+int).slice(-300); };
+        if(fin){ buffer+=fin; transcripcion+=fin; pintarTranscripcion(); guardarControl();
+          if(modoE==='continua' && Date.now()-ultimo>20000) proponerAhora(); }
+        $('interim').textContent=int; };
       recog.onend=()=>{ if(escuchando){ try{recog.start();}catch(_){} } };
       escuchando=true; buffer=''; ultimo=Date.now(); try{recog.start();}catch(_){}
       $('btnEsc').textContent='⏸️ Parar';
@@ -284,7 +325,7 @@
   }
   function proponerAhora(){ const t=buffer.trim(); if(!t)return; ultimo=Date.now(); generar(t); buffer=''; }
 
-  cargarCfg();
+  cargar();
 </script>
 </body>
 </html>
