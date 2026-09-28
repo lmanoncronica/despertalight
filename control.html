@@ -81,6 +81,23 @@
       <label>…o subir plantilla desde tu PC</label><input type="file" id="fondoFile" accept="image/*" onchange="subirPlantilla()">
       <div class="meta" id="imgEstado" style="margin-top:4px"></div>
     </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <b style="font-family:'Oswald'">Header (logo arriba)</b>
+    <div class="mini" style="margin-top:6px">
+      <div><label>Posición</label>
+        <select id="h_pos" onchange="emitir()"><option value="l">Izquierda</option><option value="c">Centro</option><option value="r">Derecha</option></select></div>
+      <div><label>Alto del logo (px)</label><input id="h_size" type="number" min="30" max="240" value="80" oninput="emitir()"></div>
+    </div>
+    <label>Logo por URL</label><input id="h_url" placeholder="https://…" oninput="headerLogo=this.value;emitir()">
+    <label>…o subir logo desde tu PC</label><input type="file" id="h_file" accept="image/*" onchange="subirHeader()">
+    <div class="meta" id="hEstado" style="margin-top:4px"></div>
+    <div class="row"><button class="b3" onclick="headerLogo='';$('h_url').value='';$('hEstado').textContent='';emitir()">Quitar logo</button></div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <b style="font-family:'Oswald'">Escucha</b>
+    <label>En modo Continua, proponer cada (segundos)</label>
+    <input id="intervalo" type="number" min="5" max="120" value="20" onchange="guardarCfg()">
+
     <div class="row"><button class="b1" onclick="guardarCfg()">Guardar configuración</button></div>
   </details>
 
@@ -107,7 +124,15 @@
 
       <h2>📄 Transcripción</h2>
       <div id="transcripcion"></div>
-      <div class="row"><button class="b3" onclick="limpiarTrans()">Limpiar transcripción</button></div>
+      <div class="row">
+        <button class="b3" onclick="descargarActual()">⬇️ Descargar</button>
+        <button class="b1" onclick="archivar()">🗄️ Archivar y empezar nueva</button>
+        <button class="b3" onclick="limpiarTrans()">Limpiar</button>
+      </div>
+
+      <h2>🗂️ Transcripciones guardadas</h2>
+      <div class="row" style="margin-top:0"><button class="b3" onclick="descargarTodas()">⬇️ Descargar todas</button></div>
+      <div id="archivoLista"></div>
 
       <h2>✍️ Meter a mano</h2>
       <div class="card" style="margin-top:0">
@@ -127,7 +152,7 @@
 <script>
   const $=id=>document.getElementById(id);
   const chan = ('BroadcastChannel' in window) ? new BroadcastChannel('bcn_overlay') : null;
-  let modoE='tramos', seq=0, pantalla=[], propuestas=[], transcripcion='', imgFondo='';
+  let modoE='tramos', seq=0, pantalla=[], propuestas=[], transcripcion='', imgFondo='', headerLogo='', archivo=[];
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   const sel=(a,b)=>a===b?' selected':'';
 
@@ -138,6 +163,7 @@
   }
   function estadoActual(){
     return { items:pantalla, fondo:fondoActual(), acento:$('acento').value,
+      header:{ logo:headerLogo, pos:$('h_pos').value, size:+$('h_size').value||80 },
       tipo:{ fuente:$('t_fuente').value, color:$('t_col').value, colorFrase:$('t_colf').value,
              tamTitular:+$('t_tt').value||0, tamFrase:+$('t_tf').value||0 } };
   }
@@ -213,6 +239,38 @@
   function pintarTranscripcion(){ const b=$('transcripcion'); b.textContent=transcripcion; b.scrollTop=b.scrollHeight; }
   function limpiarTrans(){ transcripcion=''; pintarTranscripcion(); guardarControl(); }
 
+  function ahoraLabel(){ return new Date().toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+  function ahoraArchivo(){ const n=new Date(), p=x=>String(x).padStart(2,'0');
+    return `${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}_${p(n.getHours())}-${p(n.getMinutes())}-${p(n.getSeconds())}`; }
+  function descargarTexto(nombre, texto){
+    const blob=new Blob([texto||''],{type:'text/plain;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nombre;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }
+  function descargarActual(){ if(!transcripcion.trim()){alert('No hay transcripción todavía.');return;}
+    descargarTexto('transcripcion_'+ahoraArchivo()+'.txt', transcripcion); }
+  function archivar(){
+    if(!transcripcion.trim()){alert('No hay transcripción para archivar.');return;}
+    archivo.unshift({id:++seq, ts:ahoraLabel(), file:ahoraArchivo(), texto:transcripcion});
+    transcripcion=''; pintarTranscripcion(); pintarArchivo(); guardarControl(); guardarArchivo();
+  }
+  function pintarArchivo(){
+    $('archivoLista').innerHTML = archivo.length ? archivo.map(a=>`<div class="card" style="margin-top:8px">
+      <div><b>${a.ts}</b> <span class="meta">(${(a.texto||'').length} caracteres)</span></div>
+      <div class="row"><button class="b3" onclick="descargarArch(${a.id})">⬇️ Descargar</button>
+        <button class="b3" onclick="borrarArch(${a.id})">🗑️ Borrar</button></div></div>`).join('')
+      : '<div class="meta">Aún no hay transcripciones guardadas.</div>';
+  }
+  function descargarArch(id){ const a=archivo.find(x=>x.id===id); if(a) descargarTexto('transcripcion_'+(a.file||ahoraArchivo())+'.txt', a.texto); }
+  function borrarArch(id){ archivo=archivo.filter(x=>x.id!==id); pintarArchivo(); guardarArchivo(); }
+  function descargarTodas(){
+    if(!archivo.length){alert('No hay transcripciones guardadas.');return;}
+    const todo=archivo.slice().reverse().map(a=>`===== ${a.ts} =====\n${a.texto}\n`).join('\n');
+    descargarTexto('transcripciones_'+ahoraArchivo()+'.txt', todo);
+  }
+  function guardarArchivo(){ try{ localStorage.setItem('bcn_transcripciones', JSON.stringify(archivo)); }
+    catch(_){ alert('El archivo de transcripciones es grande; descarga las que no necesites tener a mano.'); } }
+
   // ---------- PLANTILLA ----------
   function pintarFondoCtrl(){
     $('fondoColorBox').style.display = $('fondoTipo').value==='color'?'block':'none';
@@ -223,6 +281,12 @@
     const rd=new FileReader();
     rd.onload=()=>{ imgFondo=rd.result; $('fondoTipo').value='imagen'; pintarFondoCtrl();
       $('imgEstado').textContent='Plantilla cargada: '+f.name; emitir(); };
+    rd.readAsDataURL(f);
+  }
+  function subirHeader(){
+    const f=$('h_file').files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{ headerLogo=rd.result; $('hEstado').textContent='Logo cargado: '+f.name; emitir(); };
     rd.readAsDataURL(f);
   }
 
@@ -237,7 +301,9 @@
       motor:$('motor').value, lang:$('lang').value, fondoTipo:$('fondoTipo').value,
       fondoColor:$('fondoColor').value, fondoImg:(imgFondo.startsWith('data:')?'':imgFondo),
       acento:$('acento').value, t_fuente:$('t_fuente').value, t_col:$('t_col').value,
-      t_colf:$('t_colf').value, t_tt:$('t_tt').value, t_tf:$('t_tf').value }));
+      t_colf:$('t_colf').value, t_tt:$('t_tt').value, t_tf:$('t_tf').value,
+      h_pos:$('h_pos').value, h_size:$('h_size').value, h_url:(headerLogo.startsWith('data:')?'':headerLogo),
+      intervalo:$('intervalo').value }));
     emitir(); $('cfg').open=false;
   }
   function cargar(){
@@ -251,6 +317,9 @@
       if(c.acento)$('acento').value=c.acento; if(c.t_fuente)$('t_fuente').value=c.t_fuente;
       if(c.t_col)$('t_col').value=c.t_col; if(c.t_colf)$('t_colf').value=c.t_colf;
       if(c.t_tt)$('t_tt').value=c.t_tt; if(c.t_tf)$('t_tf').value=c.t_tf;
+      if(c.h_pos)$('h_pos').value=c.h_pos; if(c.h_size)$('h_size').value=c.h_size;
+      if(c.h_url){$('h_url').value=c.h_url; headerLogo=c.h_url;}
+      if(c.intervalo)$('intervalo').value=c.intervalo;
     }catch(_){}
     // pantalla actual (lo que se está viendo)
     try{const o=JSON.parse(localStorage.getItem('bcn_overlay_state')||'{}'); if(Array.isArray(o.items)) pantalla=o.items;}catch(_){}
@@ -260,8 +329,9 @@
       if(typeof s.transcripcion==='string') transcripcion=s.transcripcion;
       if(s.seq) seq=s.seq;
     }catch(_){}
-    seq=Math.max(seq, ...propuestas.map(p=>p.id||0), 0);
-    pintarFondoCtrl(); pintarLista(); pintarTranscripcion(); pintarBarra();
+    try{ const a=JSON.parse(localStorage.getItem('bcn_transcripciones')||'[]'); if(Array.isArray(a)) archivo=a; }catch(_){}
+    seq=Math.max(seq, ...propuestas.map(p=>p.id||0), ...archivo.map(a=>a.id||0), 0);
+    pintarFondoCtrl(); pintarLista(); pintarTranscripcion(); pintarArchivo(); pintarBarra();
     if(!localStorage.getItem('gemini_key') && !localStorage.getItem('claude_key')) $('cfg').open=true;
   }
 
@@ -315,7 +385,8 @@
       recog.onresult=e=>{ let fin='',int='';
         for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript; e.results[i].isFinal?fin+=t+' ':int+=t;}
         if(fin){ buffer+=fin; transcripcion+=fin; pintarTranscripcion(); guardarControl();
-          if(modoE==='continua' && Date.now()-ultimo>20000) proponerAhora(); }
+          const iv=(+$('intervalo').value||20)*1000;
+          if(modoE==='continua' && Date.now()-ultimo>iv) proponerAhora(); }
         $('interim').textContent=int; };
       recog.onend=()=>{ if(escuchando){ try{recog.start();}catch(_){} } };
       escuchando=true; buffer=''; ultimo=Date.now(); try{recog.start();}catch(_){}
