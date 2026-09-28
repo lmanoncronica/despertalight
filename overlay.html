@@ -9,24 +9,28 @@
   :root{
     --acento:#E4002B; --fuente:'Oswald';
     --col-tit:#ffffff; --col-fra:#ffffff;
-    --tam-tit:clamp(38px,6.5vw,110px); --tam-fra:clamp(20px,2.4vw,40px);
+    --tam-tit:clamp(34px,5.6vw,96px); --tam-fra:clamp(18px,2.1vw,36px);
+    --head-h:80px;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{background:transparent;font-family:'Inter',sans-serif;overflow:hidden;}
   #bgimg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
-  .stage{position:fixed;inset:0;}
-  .zone{position:absolute;display:flex;flex-direction:column;gap:2.2vh;}
+  /* Header con logo */
+  #header{position:fixed;top:0;left:0;right:0;display:none;padding:3vh 5vw;z-index:3;}
+  #header img{max-height:var(--head-h);width:auto;}
+  /* Escenario en 3 bandas (arriba / centro / abajo) que no se solapan */
+  .stage{position:fixed;inset:0;display:grid;grid-template-rows:1fr 1fr 1fr;padding:5vh 5vw;z-index:2;}
+  .banda{display:flex;gap:3vw;grid-column:1/-1;}
+  .col{flex:1;min-width:0;display:flex;flex-direction:column;gap:2vh;}
   .item .titular{
     font-family:var(--fuente),'Oswald',Arial,sans-serif;font-weight:700;text-transform:uppercase;
     line-height:1.02;font-size:var(--tam-tit);color:var(--col-tit);
     border-left:.14em solid var(--acento);padding-left:.32em;text-shadow:0 3px 18px rgba(0,0,0,.85);}
   .item .frase{
     font-family:var(--fuente),'Inter',sans-serif;font-weight:500;font-style:italic;color:var(--col-fra);
-    font-size:var(--tam-fra);margin-top:.35em;max-width:min(60ch,72vw);
-    text-shadow:0 2px 12px rgba(0,0,0,.9);white-space:pre-wrap;}
-  /* la barra de acento solo en alineados a la izquierda */
-  .zone[data-h="c"] .item .titular,.zone[data-h="r"] .item .titular{border-left:none;padding-left:0;}
+    font-size:var(--tam-fra);margin-top:.35em;text-shadow:0 2px 12px rgba(0,0,0,.9);white-space:pre-wrap;}
+  .col[data-h="c"] .item .titular,.col[data-h="r"] .item .titular{border-left:none;padding-left:0;}
   .in{animation:in .5s cubic-bezier(.2,.7,.2,1) both;}
   @keyframes in{from{opacity:0;transform:translateY(.4em);}to{opacity:1;transform:none;}}
   @media (prefers-reduced-motion:reduce){.in{animation:none;}}
@@ -34,10 +38,12 @@
 </head>
 <body>
   <img id="bgimg" alt="">
+  <div id="header"></div>
   <div class="stage" id="stage"></div>
 <script>
   const $=id=>document.getElementById(id);
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const FILA={t:1,m:2,b:3}, JUST={t:'flex-start',m:'center',b:'flex-end'};
   let shown=new Set();
 
   function aplicarFondo(f){
@@ -46,17 +52,10 @@
     else if(f.tipo==='imagen' && f.valor){ img.src=f.valor; img.style.display='block'; document.body.style.background='transparent'; }
     else { document.body.style.background='transparent'; img.style.display='none'; }
   }
-  function estiloZona(pos){
-    const v=pos[0], h=pos[1];
-    const tx = h==='c'?'-50%':'0', ty = v==='m'?'-50%':'0';
-    let s='';
-    s += h==='l'?'left:5vw;': h==='c'?'left:50%;':'right:5vw;';
-    s += v==='t'?'top:5vh;': v==='m'?'top:50%;':'bottom:5vh;';
-    s += `transform:translate(${tx},${ty});`;
-    s += 'align-items:'+(h==='l'?'flex-start':h==='c'?'center':'flex-end')+';';
-    s += 'text-align:'+(h==='l'?'left':h==='c'?'center':'right')+';';
-    s += 'max-width:'+(h==='c'?'70vw':'44vw')+';';
-    return s;
+  function itemHTML(it){
+    return `<div class="item" data-id="${it.id}">`+
+      (it.titular?`<div class="titular">${esc(it.titular)}</div>`:'')+
+      (it.frase?`<div class="frase">${esc(it.frase)}</div>`:'')+`</div>`;
   }
   function render(e){
     e=e||{}; const r=document.documentElement.style;
@@ -65,19 +64,35 @@
     if(t.fuente) r.setProperty('--fuente',"'"+t.fuente+"'");
     if(t.color) r.setProperty('--col-tit',t.color);
     if(t.colorFrase) r.setProperty('--col-fra',t.colorFrase);
-    r.setProperty('--tam-tit', (t.tamTitular>0)? t.tamTitular+'px':'clamp(38px,6.5vw,110px)');
-    r.setProperty('--tam-fra', (t.tamFrase>0)? t.tamFrase+'px':'clamp(20px,2.4vw,40px)');
+    r.setProperty('--tam-tit', (t.tamTitular>0)? t.tamTitular+'px':'clamp(34px,5.6vw,96px)');
+    r.setProperty('--tam-fra', (t.tamFrase>0)? t.tamFrase+'px':'clamp(18px,2.1vw,36px)');
     aplicarFondo(e.fondo);
 
+    // Header (logo)
+    const h=e.header||{}; const hd=$('header');
+    if(h.logo){ hd.style.display='flex';
+      hd.style.justifyContent = h.pos==='c'?'center':h.pos==='r'?'flex-end':'flex-start';
+      r.setProperty('--head-h',(h.size||80)+'px'); hd.innerHTML=`<img src="${h.logo}">`; }
+    else { hd.style.display='none'; hd.innerHTML=''; }
+
+    // Textos en bandas
     const items=e.items||[];
-    const grupos={};
-    items.forEach(it=>{ const p=(it.pos&&it.pos.length===2)?it.pos:'bl'; (grupos[p]=grupos[p]||[]).push(it); });
-    $('stage').innerHTML = Object.keys(grupos).map(pos=>{
-      const inner = grupos[pos].map(it=>`<div class="item" data-id="${it.id}">`+
-        (it.titular?`<div class="titular">${esc(it.titular)}</div>`:'')+
-        (it.frase?`<div class="frase">${esc(it.frase)}</div>`:'')+`</div>`).join('');
-      return `<div class="zone" data-h="${pos[1]}" style="${estiloZona(pos)}">${inner}</div>`;
-    }).join('');
+    const bandas={t:{},m:{},b:{}};
+    items.forEach(it=>{ const p=(it.pos&&it.pos.length===2)?it.pos:'bl'; const v=p[0],hh=p[1];
+      if(!bandas[v]) return; (bandas[v][hh]=bandas[v][hh]||[]).push(it); });
+    let html='';
+    ['t','m','b'].forEach(v=>{
+      const cols=bandas[v]; if(!Object.keys(cols).length) return;
+      let inner='';
+      ['l','c','r'].forEach(hh=>{ if(!cols[hh]) return;
+        const ai=hh==='l'?'flex-start':hh==='c'?'center':'flex-end';
+        const ta=hh==='l'?'left':hh==='c'?'center':'right';
+        inner+=`<div class="col" data-h="${hh}" style="align-items:${ai};text-align:${ta};justify-content:${JUST[v]}">`+
+          cols[hh].map(itemHTML).join('')+`</div>`;
+      });
+      html+=`<div class="banda" style="grid-row:${FILA[v]};align-items:${JUST[v]}">${inner}</div>`;
+    });
+    $('stage').innerHTML=html;
     items.forEach(it=>{ if(!shown.has(it.id)){ const el=$('stage').querySelector('[data-id="'+it.id+'"]'); if(el) el.classList.add('in'); shown.add(it.id);} });
     shown=new Set(items.map(it=>it.id));
   }
