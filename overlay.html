@@ -16,7 +16,7 @@
   body{background:transparent;font-family:'Inter',sans-serif;overflow:hidden;}
   #bgimg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
   .stage{position:fixed;inset:0;}
-  .zone{position:absolute;display:flex;flex-direction:column;gap:2.2vh;max-width:72vw;}
+  .zone{position:absolute;display:flex;flex-direction:column;gap:2.2vh;}
   .item .titular{
     font-family:var(--fuente),'Oswald',Arial,sans-serif;font-weight:700;text-transform:uppercase;
     line-height:1.02;font-size:var(--tam-tit);color:var(--col-tit);
@@ -55,6 +55,7 @@
     s += `transform:translate(${tx},${ty});`;
     s += 'align-items:'+(h==='l'?'flex-start':h==='c'?'center':'flex-end')+';';
     s += 'text-align:'+(h==='l'?'left':h==='c'?'center':'right')+';';
+    s += 'max-width:'+(h==='c'?'70vw':'44vw')+';';
     return s;
   }
   function render(e){
