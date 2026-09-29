@@ -31,6 +31,7 @@
   .mini input[type=color]{height:38px;}
   #transcripcion{max-height:32vh;overflow-y:auto;background:#0e1116;border:1px solid var(--line);border-radius:8px;padding:10px;white-space:pre-wrap;font-size:13px;color:#c7ccd4;line-height:1.5;margin-top:4px;}
   #lista{max-height:64vh;overflow-y:auto;padding-right:4px;}
+  input[type=range]{padding:0;height:26px;accent-color:var(--acento);}
 </style>
 </head>
 <body>
@@ -54,7 +55,7 @@
       <div><label>Tipografía</label>
         <select id="t_fuente" onchange="emitir()">
           <option>Oswald</option><option>Montserrat</option><option>Roboto Condensed</option>
-          <option>Inter</option><option>Arial</option><option>Georgia</option>
+          <option>Work Sans</option><option>Inter</option><option>Arial</option><option>Georgia</option>
           <option>Verdana</option><option>Tahoma</option><option>Impact</option><option>Times New Roman</option>
         </select></div>
       <div><label>Color titular</label><input id="t_col" type="color" value="#ffffff" oninput="emitir()"></div>
@@ -66,6 +67,7 @@
       <div><label>Tamaño cita (px, 0=auto)</label><input id="t_tf" type="number" min="0" max="120" value="0" oninput="emitir()"></div>
       <div><label>Color de acento</label><input id="acento" type="color" value="#E4002B" oninput="emitir()"></div>
     </div>
+    <label class="cfg-check" style="display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--txt)"><input type="checkbox" id="sombra" checked style="width:auto" onchange="emitir()"> Sombra paralela en el texto</label>
 
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
     <b style="font-family:'Oswald'">Fondo / plantilla</b>
@@ -88,10 +90,46 @@
         <select id="h_pos" onchange="emitir()"><option value="l">Izquierda</option><option value="c">Centro</option><option value="r">Derecha</option></select></div>
       <div><label>Alto del logo (px)</label><input id="h_size" type="number" min="30" max="240" value="80" oninput="emitir()"></div>
     </div>
+    <div class="mini" style="margin-top:6px">
+      <div><label>Margen superior (px)</label><input id="h_pt" type="number" min="0" max="300" value="24" oninput="emitir()"></div>
+      <div><label>Margen lateral (px)</label><input id="h_px" type="number" min="0" max="300" value="64" oninput="emitir()"></div>
+    </div>
     <label>Logo por URL</label><input id="h_url" placeholder="https://…" oninput="headerLogo=this.value;emitir()">
     <label>…o subir logo desde tu PC</label><input type="file" id="h_file" accept="image/*" onchange="subirHeader()">
     <div class="meta" id="hEstado" style="margin-top:4px"></div>
     <div class="row"><button class="b3" onclick="headerLogo='';$('h_url').value='';$('hEstado').textContent='';emitir()">Quitar logo</button></div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <b style="font-family:'Oswald'">Animación de entrada</b>
+    <div class="mini" style="margin-top:6px">
+      <div><label>Tipo</label>
+        <select id="an_tipo" onchange="emitir()">
+          <option value="fade">Fundido (fade in)</option>
+          <option value="fadeup">Fundido + deslizar</option>
+          <option value="none">Sin animación</option>
+        </select></div>
+      <div><label>Duración (s)</label><input id="an_dur" type="number" min="0" max="3" step="0.1" value="0.5" oninput="emitir()"></div>
+    </div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <b style="font-family:'Oswald'">Dónde mostrar el texto (por defecto)</b>
+    <div class="meta">Posición que tendrán los textos nuevos al crearse.</div>
+    <div class="mini" style="margin-top:6px">
+      <div><label>Posición</label>
+        <select id="pvDef" onchange="persistirCfg()"><option value="b">Abajo</option><option value="m">Centro</option><option value="t">Arriba</option></select></div>
+      <div><label>Alineación</label>
+        <select id="phDef" onchange="persistirCfg()"><option value="l">Izquierda</option><option value="c">Centro</option><option value="r">Derecha</option></select></div>
+    </div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <b style="font-family:'Oswald'">Presets de configuración</b>
+    <div class="meta">Guarda un "look" completo (colores, letra, header, fondo, posición…) y cárgalo cuando quieras.</div>
+    <div class="row">
+      <select id="presetSel" style="flex:1"><option value="">— elegir preset —</option></select>
+      <button class="b3" onclick="cargarPreset()">Cargar</button>
+      <button class="b3" onclick="borrarPreset()">Borrar</button>
+    </div>
+    <div class="row"><button class="b1" onclick="guardarPreset()">💾 Guardar como preset</button></div>
 
     <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
     <b style="font-family:'Oswald'">Escucha</b>
@@ -117,11 +155,13 @@
           <label style="margin:0;display:flex;align-items:center;gap:6px"><input type="radio" name="me" value="tramos" checked style="width:auto" onchange="modoE='tramos'"> Tramos</label>
           <label style="margin:0;display:flex;align-items:center;gap:6px"><input type="radio" name="me" value="continua" style="width:auto" onchange="modoE='continua'"> Continua</label>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--txt)"><input type="checkbox" id="soloTrans" style="width:auto" onchange="persistirCfg()"> Solo transcribir (no proponer)</label>
         <div class="row">
           <button class="b2" id="btnEsc" onclick="toggleEsc()">▶️ Escuchar</button>
           <button class="b3" onclick="proponerAhora()">Proponer ahora</button>
         </div>
         <div class="meta" id="interim" style="margin-top:8px;min-height:16px;color:#7f8794"></div>
+        <div class="meta" id="estadoEsc" style="margin-top:4px;color:#57D9A3"></div>
       </div>
 
       <h2>📄 Transcripción</h2>
@@ -166,9 +206,11 @@
   }
   function estadoActual(){
     return { items:pantalla, fondo:fondoActual(), acento:$('acento').value,
-      header:{ logo:headerLogo, pos:$('h_pos').value, size:+$('h_size').value||80 },
+      header:{ logo:headerLogo, pos:$('h_pos').value, size:+$('h_size').value||80,
+               pt:+$('h_pt').value||0, px:+$('h_px').value||0 },
+      anim:{ tipo:$('an_tipo').value, dur:+$('an_dur').value },
       tipo:{ fuente:$('t_fuente').value, color:$('t_col').value, colorFrase:$('t_colf').value,
-             tamTitular:+$('t_tt').value||0, tamFrase:+$('t_tf').value||0 } };
+             tamTitular:+$('t_tt').value||0, tamFrase:+$('t_tf').value||0, sombra:$('sombra').checked } };
   }
   function emitir(){
     const e=estadoActual();
@@ -192,24 +234,20 @@
   function quitarTodo(){ pantalla=[]; emitir(); }
 
   // ---------- LISTA DE PROPUESTAS (persistente) ----------
-  function opciones(pv,ph){
-    return `<div class="row" style="gap:8px;align-items:flex-end">
-      <div style="flex:1;min-width:110px"><label style="margin:0 0 2px">Posición</label>
-        <select id="pv_ID" onchange="actualizarProp(ID);reLanzar(ID)">
-          <option value="b"${sel(pv,'b')}>Abajo</option><option value="m"${sel(pv,'m')}>Centro</option><option value="t"${sel(pv,'t')}>Arriba</option>
-        </select></div>
-      <div style="flex:1;min-width:110px"><label style="margin:0 0 2px">Alineación</label>
-        <select id="ph_ID" onchange="actualizarProp(ID);reLanzar(ID)">
-          <option value="l"${sel(ph,'l')}>Izquierda</option><option value="c"${sel(ph,'c')}>Centro</option><option value="r"${sel(ph,'r')}>Derecha</option>
-        </select></div>
-    </div>`;
-  }
   function cardHTML(p){
+    const x=(p.x!=null?p.x:8), y=(p.y!=null?p.y:82), h=p.h||'l';
     return `<div class="card" id="card_${p.id}">
       <div class="meta">${esc(p.origen||'')}</div>
       <input id="pt_${p.id}" value="${esc(p.titular||'')}" placeholder="Titular" onchange="actualizarProp(${p.id})">
       <textarea id="pf_${p.id}" rows="2" placeholder="Frase / cita" onchange="actualizarProp(${p.id})">${esc(p.frase||'')}</textarea>
-      ${opciones(p.pv||'b', p.ph||'l').replace(/ID/g, p.id)}
+      <label style="margin:8px 0 2px">Alineación</label>
+      <select id="ph_${p.id}" onchange="actualizarProp(${p.id});reLanzar(${p.id})">
+        <option value="l"${sel(h,'l')}>Izquierda</option><option value="c"${sel(h,'c')}>Centro</option><option value="r"${sel(h,'r')}>Derecha</option>
+      </select>
+      <label style="margin:8px 0 2px">Horizontal: <span id="xlab_${p.id}">${x}</span>%</label>
+      <input type="range" min="0" max="100" value="${x}" id="px_${p.id}" oninput="document.getElementById('xlab_${p.id}').textContent=this.value;actualizarProp(${p.id});reLanzar(${p.id})">
+      <label style="margin:8px 0 2px">Vertical: <span id="ylab_${p.id}">${y}</span>%</label>
+      <input type="range" min="0" max="100" value="${y}" id="py_${p.id}" oninput="document.getElementById('ylab_${p.id}').textContent=this.value;actualizarProp(${p.id});reLanzar(${p.id})">
       <div class="row">
         <button class="b4" onclick="lanzar(${p.id})">📺 Lanzar</button>
         <button class="b3" onclick="quitar(${p.id})">Quitar de pantalla</button>
@@ -217,26 +255,27 @@
       </div></div>`;
   }
   function agregarPropuesta(titular, frase, origen){
-    const p={id:++seq, titular:titular||'', frase:frase||'', pv:'b', ph:'l', origen:origen||''};
+    const hmap={l:{x:8,h:'l'},c:{x:50,h:'c'},r:{x:92,h:'r'}}, ymap={b:82,m:50,t:14};
+    const dh=hmap[($('phDef')?$('phDef').value:'l')]||hmap.l;
+    const p={id:++seq, titular:titular||'', frase:frase||'', x:dh.x, y:(ymap[($('pvDef')?$('pvDef').value:'b')]||82), h:dh.h, origen:origen||''};
     propuestas.unshift(p);
     $('lista').insertAdjacentHTML('afterbegin', cardHTML(p));
     guardarControl();
   }
-  function pintarLista(){
-    $('lista').innerHTML = propuestas.map(cardHTML).join('');
-    refrescarMarcas();
-  }
+  function pintarLista(){ $('lista').innerHTML = propuestas.map(cardHTML).join(''); refrescarMarcas(); }
   function actualizarProp(id){
     const p=propuestas.find(x=>x.id===id); if(!p) return;
-    p.titular=$('pt_'+id).value; p.frase=$('pf_'+id).value; p.pv=$('pv_'+id).value; p.ph=$('ph_'+id).value;
+    p.titular=$('pt_'+id).value; p.frase=$('pf_'+id).value; p.h=$('ph_'+id).value;
+    p.x=+$('px_'+id).value; p.y=+$('py_'+id).value;
     guardarControl();
   }
   function lanzar(id){
-    const t=$('pt_'+id).value.trim(), f=$('pf_'+id).value.trim();
-    const pos=($('pv_'+id).value||'b')+($('ph_'+id).value||'l');
-    const i=pantalla.findIndex(x=>x.id===id);
-    if(i>=0) pantalla[i]={id,titular:t,frase:f,pos}; else pantalla.push({id,titular:t,frase:f,pos});
-    actualizarProp(id); emitir();
+    actualizarProp(id);
+    const item={id, titular:$('pt_'+id).value.trim(), frase:$('pf_'+id).value.trim(),
+                x:+$('px_'+id).value, y:+$('py_'+id).value, h:$('ph_'+id).value};
+    const i=pantalla.findIndex(z=>z.id===id);
+    if(i>=0) pantalla[i]=item; else pantalla.push(item);
+    const c=$('card_'+id); if(c) c.classList.add('on'); emitir();
   }
   function reLanzar(id){ if(pantalla.some(x=>x.id===id)) lanzar(id); }
   function quitar(id){ pantalla=pantalla.filter(x=>x.id!==id); emitir(); }
@@ -308,33 +347,66 @@
   function guardarControl(){
     try{ localStorage.setItem('bcn_control', JSON.stringify({propuestas, transcripcion, seq})); }catch(_){}
   }
+  function cfgObjeto(){
+    return { motor:$('motor').value, lang:$('lang').value, fondoTipo:$('fondoTipo').value,
+      fondoColor:$('fondoColor').value, fondoImg:(imgFondo.startsWith('data:')?'':imgFondo),
+      acento:$('acento').value, t_fuente:$('t_fuente').value, t_col:$('t_col').value,
+      t_colf:$('t_colf').value, t_tt:$('t_tt').value, t_tf:$('t_tf').value, sombra:$('sombra').checked,
+      h_pos:$('h_pos').value, h_size:$('h_size').value, h_pt:$('h_pt').value, h_px:$('h_px').value,
+      h_url:(headerLogo.startsWith('data:')?'':headerLogo),
+      an_tipo:$('an_tipo').value, an_dur:$('an_dur').value, soloTrans:$('soloTrans').checked,
+      pvDef:$('pvDef').value, phDef:$('phDef').value, intervalo:$('intervalo').value };
+  }
+  function aplicarCfg(c){
+    if(!c) return;
+    const set=(id,v)=>{ if(v!==undefined && v!==null && $(id)) $(id).value=v; };
+    set('motor',c.motor); set('lang',c.lang); set('fondoTipo',c.fondoTipo); set('fondoColor',c.fondoColor);
+    if(c.fondoImg!==undefined){ $('fondoImg').value=c.fondoImg||''; imgFondo=c.fondoImg||''; }
+    set('acento',c.acento); set('t_fuente',c.t_fuente); set('t_col',c.t_col); set('t_colf',c.t_colf);
+    set('t_tt',c.t_tt); set('t_tf',c.t_tf); if(typeof c.sombra==='boolean') $('sombra').checked=c.sombra;
+    set('h_pos',c.h_pos); set('h_size',c.h_size); set('h_pt',c.h_pt); set('h_px',c.h_px);
+    if(c.h_url!==undefined){ $('h_url').value=c.h_url||''; headerLogo=c.h_url||''; }
+    set('an_tipo',c.an_tipo); set('an_dur',c.an_dur);
+    if(typeof c.soloTrans==='boolean') $('soloTrans').checked=c.soloTrans;
+    set('pvDef',c.pvDef); set('phDef',c.phDef); set('intervalo',c.intervalo);
+    pintarFondoCtrl();
+  }
   function persistirCfg(){
     localStorage.setItem('gemini_key', $('key_g').value.trim());
     localStorage.setItem('claude_key', $('key_c').value.trim());
-    try{ localStorage.setItem('bcn_cfg', JSON.stringify({
-      motor:$('motor').value, lang:$('lang').value, fondoTipo:$('fondoTipo').value,
-      fondoColor:$('fondoColor').value, fondoImg:(imgFondo.startsWith('data:')?'':imgFondo),
-      acento:$('acento').value, t_fuente:$('t_fuente').value, t_col:$('t_col').value,
-      t_colf:$('t_colf').value, t_tt:$('t_tt').value, t_tf:$('t_tf').value,
-      h_pos:$('h_pos').value, h_size:$('h_size').value, h_url:(headerLogo.startsWith('data:')?'':headerLogo),
-      intervalo:$('intervalo').value })); }catch(_){}
+    try{ localStorage.setItem('bcn_cfg', JSON.stringify(cfgObjeto())); }catch(_){}
   }
   function guardarCfg(){ persistirCfg(); emitir(); $('cfg').open=false; }
+
+  // --- Presets ---
+  let presets={};
+  function pintarPresets(sel){
+    const s=$('presetSel'); const nombres=Object.keys(presets);
+    s.innerHTML='<option value="">— elegir preset —</option>'+nombres.map(n=>`<option${sel===n?' selected':''}>${n.replace(/</g,'&lt;')}</option>`).join('');
+  }
+  function guardarPreset(){
+    const n=(prompt('Nombre del preset:')||'').trim(); if(!n) return;
+    presets[n]=cfgObjeto();
+    try{ localStorage.setItem('bcn_presets', JSON.stringify(presets)); }catch(_){ alert('No se pudo guardar el preset.'); }
+    pintarPresets(n);
+  }
+  function cargarPreset(){
+    const n=$('presetSel').value; if(!n || !presets[n]) return;
+    aplicarCfg(presets[n]); persistirCfg(); emitir();
+  }
+  function borrarPreset(){
+    const n=$('presetSel').value; if(!n || !presets[n]) return;
+    if(!confirm('¿Borrar el preset "'+n+'"?')) return;
+    delete presets[n]; try{ localStorage.setItem('bcn_presets', JSON.stringify(presets)); }catch(_){}
+    pintarPresets();
+  }
   function cargar(){
     // claves + ajustes
     $('key_g').value=localStorage.getItem('gemini_key')||'';
     $('key_c').value=localStorage.getItem('claude_key')||'';
-    try{const c=JSON.parse(localStorage.getItem('bcn_cfg')||'{}');
-      if(c.motor)$('motor').value=c.motor; if(c.lang)$('lang').value=c.lang;
-      if(c.fondoTipo)$('fondoTipo').value=c.fondoTipo; if(c.fondoColor)$('fondoColor').value=c.fondoColor;
-      if(c.fondoImg){$('fondoImg').value=c.fondoImg; imgFondo=c.fondoImg;}
-      if(c.acento)$('acento').value=c.acento; if(c.t_fuente)$('t_fuente').value=c.t_fuente;
-      if(c.t_col)$('t_col').value=c.t_col; if(c.t_colf)$('t_colf').value=c.t_colf;
-      if(c.t_tt)$('t_tt').value=c.t_tt; if(c.t_tf)$('t_tf').value=c.t_tf;
-      if(c.h_pos)$('h_pos').value=c.h_pos; if(c.h_size)$('h_size').value=c.h_size;
-      if(c.h_url){$('h_url').value=c.h_url; headerLogo=c.h_url;}
-      if(c.intervalo)$('intervalo').value=c.intervalo;
-    }catch(_){}
+    try{ aplicarCfg(JSON.parse(localStorage.getItem('bcn_cfg')||'{}')); }catch(_){}
+    try{ presets=JSON.parse(localStorage.getItem('bcn_presets')||'{}')||{}; }catch(_){ presets={}; }
+    pintarPresets();
     // pantalla actual (lo que se está viendo)
     try{const o=JSON.parse(localStorage.getItem('bcn_overlay_state')||'{}'); if(Array.isArray(o.items)) pantalla=o.items;}catch(_){}
     // lista + transcripción
@@ -380,17 +452,31 @@
   }
   async function generar(texto){
     if(!texto.trim()) return;
+    $('estadoEsc').textContent='Generando propuestas…';
     const orden=($('motor').value==='claude')?['claude','gemini']:['gemini','claude'];
     for(const m of orden){
       try{ const arr = m==='claude'?await genClaude(texto):await genGemini(texto);
-        if(arr && arr.length){ arr.slice(0,4).forEach(s=>agregarPropuesta(s.titular,s.frase,'IA · '+m)); return; }
+        if(arr && arr.length){ arr.slice(0,4).forEach(s=>agregarPropuesta(s.titular,s.frase,'IA · '+m));
+          $('estadoEsc').textContent='Propuestas añadidas ✓'; return; }
       }catch(e){}
     }
-    $('interim').textContent='No se pudieron generar titulares (revisa claves/idioma).';
+    $('estadoEsc').textContent='No se pudieron generar titulares (revisa claves/idioma).';
   }
 
   // ---------- ESCUCHA (Chrome), en paralelo ----------
-  let recog=null, escuchando=false, buffer='', ultimo=0;
+  let recog=null, escuchando=false, buffer='', ultimo=0, temporizador=null;
+  function ivMs(){ return Math.max(5,(+$('intervalo').value||20))*1000; }
+  // Reloj real: comprueba cada segundo si toca lanzar la IA (independiente de las pausas al hablar)
+  function tickContinua(){
+    if(!escuchando){ $('estadoEsc').textContent=''; return; }
+    if($('soloTrans').checked){ $('estadoEsc').textContent='Solo transcribiendo (sin propuestas).'; return; }
+    if(modoE!=='continua'){ $('estadoEsc').textContent='Modo Tramos: propone al pulsar Parar.'; return; }
+    const restante=Math.ceil((ultimo+ivMs()-Date.now())/1000);
+    if(buffer.trim() && restante<=0){ proponerAhora(); return; }
+    $('estadoEsc').textContent = buffer.trim()
+      ? `Próxima propuesta en ~${Math.max(0,restante)}s`
+      : 'Escuchando… (esperando que hablen)';
+  }
   function toggleEsc(){
     if(!escuchando){
       const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -398,17 +484,23 @@
       recog=new SR(); recog.lang=$('lang').value; recog.continuous=true; recog.interimResults=true;
       recog.onresult=e=>{ let fin='',int='';
         for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript; e.results[i].isFinal?fin+=t+' ':int+=t;}
-        if(fin){ buffer+=fin; transcripcion+=fin; pintarTranscripcion(); guardarControl();
-          const iv=(+$('intervalo').value||20)*1000;
-          if(modoE==='continua' && Date.now()-ultimo>iv) proponerAhora(); }
+        if(fin){ buffer+=fin; transcripcion+=fin; pintarTranscripcion(); guardarControl(); }
         $('interim').textContent=int; };
       recog.onend=()=>{ if(escuchando){ try{recog.start();}catch(_){} } };
       escuchando=true; buffer=''; ultimo=Date.now(); try{recog.start();}catch(_){}
+      clearInterval(temporizador); temporizador=setInterval(tickContinua,1000); tickContinua();
       $('btnEsc').textContent='⏸️ Parar';
     } else { escuchando=false; try{recog.stop();}catch(_){}
-      $('btnEsc').textContent='▶️ Escuchar'; if(buffer.trim()) proponerAhora(); }
+      clearInterval(temporizador); temporizador=null; $('estadoEsc').textContent='';
+      $('btnEsc').textContent='▶️ Escuchar'; if(!$('soloTrans').checked && buffer.trim()) proponerAhora(); }
   }
-  function proponerAhora(){ const t=buffer.trim(); if(!t)return; ultimo=Date.now(); generar(t); buffer=''; }
+  function proponerAhora(){
+    let t=buffer.trim();
+    if(!t) t=($('interim').textContent||'').trim();      // lo que se está diciendo ahora mismo
+    if(!t) t=transcripcion.slice(-700).trim();            // o lo último transcrito
+    if(!t){ $('estadoEsc').textContent='Nada que proponer todavía (habla o escribe algo primero).'; return; }
+    ultimo=Date.now(); generar(t); buffer='';
+  }
 
   cargar();
 </script>
